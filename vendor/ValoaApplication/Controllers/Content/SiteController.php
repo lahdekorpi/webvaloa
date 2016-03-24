@@ -32,12 +32,14 @@
 namespace ValoaApplication\Controllers\Content;
 
 use Webvaloa\Helpers\Navigation;
+use Webvaloa\Controller\Redirect;
 use stdClass;
 
 class SiteController extends \Webvaloa\Application
 {
     public function __construct()
     {
+        $this->ui->addJS('/jquery/plugins/jquery.nestable.js');
         $this->ui->addCSS('/css/Content_Site.css');
         $this->ui->addJS('/js/Content_Site.js');
     }
@@ -48,4 +50,14 @@ class SiteController extends \Webvaloa\Application
         $this->view->editablemenu = new stdClass();
         $this->view->editablemenu->navigation = $navigation->get();
     }
+	public function save()
+	{
+		if(!isset($_POST['json']) || empty($_POST['json'])) {
+				$this->ui->addError('Failed to save');
+				Redirect::to('content_site');
+		}
+		$json = json_decode($_POST['json']);
+		var_dump($json);
+		die();
+	}
 }

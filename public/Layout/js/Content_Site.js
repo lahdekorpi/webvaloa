@@ -30,9 +30,91 @@
 
 jQuery( document ).ready(function() {
 
-    NavigationHelpers.sortOrdering();
+    var $nestable = $('.dd').nestable({
+        listNodeName: 'ol',
+        maxDepth: 50,
+        placeClass: 'dd-placeholder list-group-item placeholder',
+        emptyClass: 'dd-empty list-group-item',
 
+        collapseBtnHTML: '',
+        listClass: 'dd-list list-group',
+        itemClass: 'dd-item list-group-item',
+
+    });
+
+    $('button.menu-add').click(function(e){
+        e.preventDefault();
+		var max = Math.max.apply(Math,
+				$('.sortable-root li[data-id]').map(function() {
+								return parseInt($(this).data('id'));
+				}).get()
+		);
+        var $new = $('#menu-template li').clone().prependTo('.dd > .dd-list');
+		$new.attr('data-id',max+1);
+		$new.find('.menu-edit').trigger('click');
+    });
+
+    $('#navigation-editor').on('click','.menu-delete',function(e){
+        e.preventDefault();
+        $menu = $(this).closest('.dd-item');
+        if(window.confirm($(this).attr('title')+' "'+$menu.data('name')+'"?')) {
+            $menu.remove();
+        }
+    });
+
+
+   $('#menu-editor').on('show.bs.modal', function (event) {
+		var $button = $(event.relatedTarget) // Button that triggered the modal
+		var $menu = $button.closest('.dd-item');
+		var modal = $(this);
+		modal.find('.modal-title .name').text($menu.data('name'));
+		modal.find('.modal-body input#name').val($menu.data('name'));
+		modal.find('.modal-body input#target').val($menu.data('target'));
+		modal.find('.modal-body input#url').val($menu.data('url'));
+		modal.find('.modal-body input#old').val($menu.data('old'));
+		modal.find('input#id').val($menu.data('id'));
+		})
+
+
+$('#menu-editor').on('hide.bs.modal', function(e){
+		var $id = parseInt($('#menu-editor input#id').val());
+		if ($('#menu-editor .menu-item-save').attr('data-save')!='1' && $('#menu-editor input#old').val()!='1') {
+				$('.dd-item[data-id="'+$id+'"]').remove();
+		}
+		$('#menu-editor .menu-item-save').removeAttr('data-save');
 });
+
+$('#menu-editor').on('click','.menu-item-save',function(e){
+		var $id = parseInt($('#menu-editor input#id').val());
+		$(this).attr('data-save',1);
+		var $menu = $('.dd-item[data-id="'+$id+'"]');
+
+		$menu
+				.data('name',$('#menu-editor input#name').val())
+				.data('type',$('#menu-editor select#type').val())
+				.data('target',$('#menu-editor input#target').val())
+				.data('url',$('#menu-editor input#url').val())
+				.data('old',1);
+
+		$menu.find('.name').text($('#menu-editor input#name').val());
+
+		$('#menu-editor').modal('hide');
+});
+
+$nestable.on('change', function() {
+		$('input#json').val(window.JSON.stringify($nestable.nestable('serialize')));
+});
+
+$('#menu-submit').submit(function(){
+		$('input#json').val(window.JSON.stringify($nestable.nestable('serialize')));
+		if (!confirm($(this).find('.menu-save').text()+'?')) {
+				e.preventDefault();
+				e.stopPropagation();
+				return false;
+		}
+});
+
+	});
 
 var NavigationHelpers = {
 
@@ -44,6 +126,7 @@ var NavigationHelpers = {
 
             $i++;
         });
+
     }
 
 }
