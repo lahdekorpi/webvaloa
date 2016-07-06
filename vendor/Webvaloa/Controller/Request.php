@@ -48,6 +48,7 @@ class Request
 {
     private static $instance = false;
 
+    private $basepath;
     private $baseuri = array();       // host (with http[s]:// prefix) and path
     private $controller = false;      // requested controller to load
     private $method = 'index';        // requested method to call from controller
@@ -89,6 +90,8 @@ class Request
         if (substr($route, 0, 1) === '/') {
             $route = substr($route, 1);
         }
+
+        $this->basepath = $route;
 
         $route = explode('/', $route);
 
@@ -345,6 +348,10 @@ class Request
         return $this->getBaseUri().'/'.$this->getCurrentRoute();
     }
 
+    public function getBasePath() {
+        return $this->basepath;
+    }
+
     public function isAjax($val = null)
     {
         if ($val !== null) {
@@ -376,7 +383,7 @@ class Request
     public static function encodeRouteParam($val)
     {
         if (strpos($val, '/') !== false) {
-            return "\$enc\$".urlencode(str_replace('/', '.', base64_encode($val)));
+            return '$enc$'.urlencode(str_replace('/', '.', base64_encode($val)));
         } else {
             return urlencode($val);
         }

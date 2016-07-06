@@ -31,12 +31,13 @@
  */
 namespace ValoaApplication\Controllers\Article;
 
-use Libvaloa\Debug;
 use Webvaloa\Cache;
-use Webvaloa\Article;
 use Webvaloa\Category;
-use Webvaloa\Helpers\Article as ArticleHelper;
 use Webvaloa\Helpers\ArticleAssociation;
+use Webvaloa\Helpers\ArticleStructure;
+use Webvaloa\Field\Value;
+use Webvaloa\Field\Field;
+use Webvaloa\Field\Fields;
 
 class ViewController extends \Webvaloa\Application
 {
@@ -49,6 +50,7 @@ class ViewController extends \Webvaloa\Application
 
     public function index($id = false)
     {
+
         // Check if we got alias instead
         if (!is_numeric($id) && strlen($id) > 0) {
             $query = '
@@ -67,7 +69,26 @@ class ViewController extends \Webvaloa\Application
             }
         }
 
-        if (!$id || !is_numeric($id)) {
+        // If requesting without id, return default
+        if ($id === false || empty($id)) {
+            if (isset($this->view->_globals->default_front_page[0])) {
+                $id = $this->view->_globals->default_front_page[0]->value;
+            } else {
+                $id = false;
+            }
+        }
+
+        // If requesting
+        if (!is_numeric($id)) {
+            if (isset($this->view->_globals->default_404_page[0])) {
+                $id = $this->view->_globals->default_404_page[0]->value;
+            } else {
+                $id = false;
+            }
+        }
+
+        // Fallback 404
+        if ($id === false) {
             header('HTTP/1.0 404 Not Found');
             exit;
         }
@@ -79,17 +100,26 @@ class ViewController extends \Webvaloa\Application
             $id = $associatedID;
         }
 
-        // Load article
-        $article = new Article($id);
-        $articleHelper = new ArticleHelper($id);
-        $this->view->id = $id;
-        $this->view->article = $articleHelper->article;
+        $structure = new ArticleStructure($id);
+        $article = $structure->getArticle();
+        if ($article->article === false) {
+            if (isset($this->view->_globals->default_404_page[0])) {
+                $id = $this->view->_globals->default_404_page[0]->value;
+                $article = new Article($id);
+            } else {
+                header('HTTP/1.0 404 Not Found');
+                exit;
+            }
+        }
+
+        $this->view->id = $this->view->articleID = $id;
+        $this->view->article = $article->article;
 
         // Set template overrides
-        $catId = $article->getCategory();
-
-        $category = new Category($catId[0]);
+        $categoryID = $structure->getCategoryId();
+        $category = new Category($categoryID);
         $category->loadCategory();
+        $this->view->categoryID = $categoryID;
 
         // Template override
         if ($tmp = $category->getTemplate()) {
@@ -107,6 +137,20 @@ class ViewController extends \Webvaloa\Application
             }
         }
 
-        Debug::__print($this->view->article);
+        // Load field structure
+        $this->view->fields = $structure->getFields();
+        $this->view->fieldsObjects = $this->view->fields;
+        foreach ($this->view->fieldsObjects as $fieldsKey => $fields) {
+            foreach ($fields->repeatable_group->repeatable as $repeatableKey => $repeatable) {
+                foreach ($repeatable->fields as $fieldName => $field) {
+                    if (!isset($this->view->fieldsObjects[$fieldsKey]->repeatable_group->repeatable[$repeatableKey]->fieldsObject)) {
+                        $this->view->fieldsObjects[$fieldsKey]->repeatable_group->repeatable[$repeatableKey]->fieldsObject = new \stdClass;
+                    }
+                    
+                    $this->view->fieldsObjects[$fieldsKey]->repeatable_group->repeatable[$repeatableKey]->fieldsObject->{$fieldName} = $field;
+                }
+            }
+        }
+        $this->view->fieldTypes = $structure->getFieldTypes();
     }
 }

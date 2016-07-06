@@ -1,2 +1,4 @@
-Deny from all
-
+<Files .cache>
+    order allow,deny
+    deny from all
+</Files>

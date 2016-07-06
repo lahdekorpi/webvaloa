@@ -33,7 +33,8 @@ namespace Webvaloa\Helpers;
 
 use Exception;
 use RuntimeException;
-use Webvaloa\Article;
+use Webvaloa\Article as ArticleHelper;
+use Webvaloa\Locale\Locales as LocalesHelper;
 
 /*
  * Associations for article translations.
@@ -53,6 +54,9 @@ use Webvaloa\Article;
  * }
  *
  */
+
+// This is somewhat EXPERIMENTAL and at the moment the support for associated articles is disabled.
+
 class ArticleAssociation
 {
     public $id;
@@ -107,6 +111,9 @@ class ArticleAssociation
 
     public function getAssociatedId()
     {
+        // Support for associations DISABLED for now
+        return $this->id;
+
         if (!$this->getLocale()) {
             $this->defaultLocale();
         }
@@ -114,6 +121,21 @@ class ArticleAssociation
         $this->setAssociatedId($this->loadAssociatedId());
 
         return $this->associatedId;
+    }
+
+    public function getAssociatedIds()
+    {
+        $localesHelper = new LocalesHelper();
+        $locales = $localesHelper->locales();
+        $ids[] = $this->getId();
+
+        foreach ($locales as $locale) {
+            $this->setLocale($locale);
+            $this->setAssociatedId($this->loadAssociatedId());
+            $ids[] = $this->associatedId;
+        }
+
+        return $ids;
     }
 
     private function loadAssociatedId()
@@ -124,7 +146,7 @@ class ArticleAssociation
         $db = \Webvaloa\Webvaloa::DBConnection();
         $id = $this->getId();
 
-        $article = new Article($id);
+        $article = new ArticleHelper($id);
         $a = $article->article;
 
         // Locale matches and no associated id is set, so this must be an main article
@@ -166,10 +188,10 @@ class ArticleAssociation
         }
         $id = $this->getId();
 
-        $article = new Article($id);
+        $article = new ArticleHelper($id);
         $a = $article->article;
 
-        $associated = new Article();
+        $associated = new ArticleHelper();
         $associated->publish_up = $a->publish_up;
         $associated->publish_down = $a->publish_down;
         $associated->published = $a->published;

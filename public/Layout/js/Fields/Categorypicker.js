@@ -1,8 +1,6 @@
-<?php
-
 /**
  * The Initial Developer of the Original Code is
- * Tarmo Alexander Sundström <ta@sundstrom.im>.
+ * Tarmo Alexander Sundström <ta@sundstrom.im>
  *
  * Portions created by the Initial Developer are
  * Copyright (C) 2014 Tarmo Alexander Sundström <ta@sundstrom.im>
@@ -29,43 +27,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-namespace Webvaloa\Helpers;
 
-class DateFormat
-{
-    public static function toMySQL($date = '')
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
+jQuery( document ).ready(function() {
 
-        if (empty($date)) {
-            $date = time();
-        }
+    jQuery('.categorypicker').each(function() {
+        CategoryPicker.initCategoryPicker(this);
+    });
 
-        return date('Y-m-d H:i:s', $date);
+});
+
+var CategoryPicker = {
+
+    initCategoryPicker: function(el) {
+        var $url = jQuery('#basehref').text();
+        var $id = jQuery(el).data('field-id');
+        var $val = jQuery(el).data('field-value');
+
+        jQuery.getJSON( $url + '/content_article/fieldParams/' + $id, function( data ) {
+            var items = [];
+            var $sel = '';
+            jQuery.each( data, function( key, val ) {
+                $sel = '';
+                if($val == val.id) {
+                    $sel = 'selected="selected"';
+                }
+                items.push('<option value="' + val.id + '" ' + $sel + '>' + val.title + '</option>');
+            });
+
+            var $html = items.join('');
+            jQuery($html).appendTo(el);
+        });
     }
 
-    public static function format($date, $format)
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        return date($format, $date);
-    }
-
-    public static function localeFormat($date, $format)
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        return strftime($format, $date);
-    }
-
-    public static function monthName($month)
-    {
-        return strftime('%B', mktime(null, null, null, (int) $month, 1));
-    }
 }

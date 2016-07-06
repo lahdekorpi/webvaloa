@@ -1,5 +1,4 @@
 <?php
-
 /**
  * The Initial Developer of the Original Code is
  * Tarmo Alexander Sundström <ta@sundstrom.im>.
@@ -29,43 +28,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-namespace Webvaloa\Helpers;
+namespace ValoaApplication\Plugins;
 
-class DateFormat
+use Libvaloa\Debug;
+
+class PluginDebugViewPlugin extends \Webvaloa\Plugin
 {
-    public static function toMySQL($date = '')
+    public function onAfterController()
     {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        if (empty($date)) {
-            $date = time();
-        }
-
-        return date('Y-m-d H:i:s', $date);
-    }
-
-    public static function format($date, $format)
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        return date($format, $date);
-    }
-
-    public static function localeFormat($date, $format)
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        return strftime($format, $date);
-    }
-
-    public static function monthName($month)
-    {
-        return strftime('%B', mktime(null, null, null, (int) $month, 1));
+        Debug::__print($this->view);
     }
 }

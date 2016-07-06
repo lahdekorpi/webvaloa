@@ -32,12 +32,16 @@
 namespace ValoaApplication\Controllers\Content;
 
 use Webvaloa\Helpers\Navigation;
+use Webvaloa\Controller\Redirect;
+use Webvaloa\Article;
+use Webvaloa\Category;
 use stdClass;
 
 class SiteController extends \Webvaloa\Application
 {
     public function __construct()
     {
+        $this->ui->addJS('/jquery/plugins/jquery.nestable.js');
         $this->ui->addCSS('/css/Content_Site.css');
         $this->ui->addJS('/js/Content_Site.js');
     }
@@ -47,5 +51,109 @@ class SiteController extends \Webvaloa\Application
         $navigation = new Navigation();
         $this->view->editablemenu = new stdClass();
         $this->view->editablemenu->navigation = $navigation->get();
+
+        $article = new Article(0);
+        $this->view->contents = $article->getArticles();
+
+        $query = '
+            SELECT *
+            FROM component ';
+
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            $this->view->components = $stmt->fetchAll();
+        } catch (Exception $e) {
+        }
+
+        $query = '
+            SELECT *
+            FROM alias ';
+
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            $this->view->alias = $stmt->fetchAll();
+        } catch (Exception $e) {
+        }
+
+        $query = '
+            SELECT *
+            FROM category ';
+
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            $this->view->lists = $stmt->fetchAll();
+        } catch (Exception $e) {
+        }
+    }
+    public function save()
+    {
+        if (!isset($_POST['json']) || empty($_POST['json'])) {
+            $this->ui->addError('Failed to save');
+            Redirect::to('content_site');
+        }
+        $json = json_decode($_POST['json']);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            try {
+                $stmt = $this->db->prepare('TRUNCATE TABLE structure'); // Delete everything and start from scratch
+            $stmt->execute();
+            } catch (Exception $e) {
+            }
+
+            $this->sub($json);
+            $this->ui->addMessage(\Webvaloa\Webvaloa::translate('SAVED'));
+        } else {
+            $this->ui->addError(\Webvaloa\Webvaloa::translate('INVALID_JSON'));
+        }
+        Redirect::to('content_site');
+        exit;
+    }
+    private function sub($items, $parent = null)
+    {
+        foreach ($items as $sub) {
+            $query = "
+            INSERT INTO structure (alias, parent_id, type, target_id, target_url, translation, locale, ordering)
+			VALUES (?, ?, ?, ?, ?, ?, '*', '0')";
+
+            try {
+                $stmt = $this->db->prepare($query);
+                if(empty($sub->alias)) {
+                        $a = $sub->name;
+                        // Use transliteration to convert special letters and characters to ascii. Note: this requires setlocale with .UTF-8 to be correctly installed
+                        $translit = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $a);
+                        if ($translit !== false) {
+                                $a = $translit;
+                        }
+                        $a = preg_replace('/[^A-Za-z0-9\-]/', '', strtolower(str_replace(' ', '-', $a)));
+                        $sub->alias = $a;
+                }
+		$stmt->set($sub->alias);
+                $stmt->set($parent);
+                $stmt->set($sub->type);
+                if ($sub->type == 'url') {
+                    $stmt->set(null);
+                    $stmt->set($sub->target);
+                } else {
+                    $stmt->set($sub->target);
+                    $stmt->set(null);
+                }
+
+                $stmt->set($sub->name);
+
+                $stmt->execute();
+
+                $insertedID = $this->db->lastInsertID();
+            } catch (Exception $e) {
+            }
+
+            if (isset($sub->children)) {
+                $this->sub($sub->children, $insertedID);
+            }
+        }
     }
 }

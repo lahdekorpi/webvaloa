@@ -277,6 +277,7 @@ class ArticleController extends \Webvaloa\Application
 
     public function globals()
     {
+        $this->ui->addJS('/js/Content_Article.js');
         $this->ui->addJS('/js/Fields/Frontend.js');
         $this->ui->addCSS('/css/Content_Field.css');
         $this->ui->setPageRoot('article');
@@ -420,7 +421,7 @@ class ArticleController extends \Webvaloa\Application
 
                     // This is the group separator, increase group ordering
                     if ($k == 'group_separator') {
-                        $i++;
+                        ++$i;
                         continue;
                     }
 
@@ -538,7 +539,7 @@ class ArticleController extends \Webvaloa\Application
                 $this->view->fieldTypes[] = $field->type;
             }
 
-            $i++;
+            ++$i;
             $groupindex[$v]->i = $i;
         }
 
@@ -597,7 +598,7 @@ class ArticleController extends \Webvaloa\Application
                     }
                 }
 
-                $i++;
+                ++$i;
                 $index[$v->field_group_id]->i = $i;
             }
         }

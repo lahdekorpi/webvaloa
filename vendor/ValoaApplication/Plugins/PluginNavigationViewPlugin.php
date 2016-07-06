@@ -2,10 +2,10 @@
 
 /**
  * The Initial Developer of the Original Code is
- * Tarmo Alexander Sundström <ta@sundstrom.im>.
+ * Toni Lähdekorpi <toni@lygon.net>.
  *
  * Portions created by the Initial Developer are
- * Copyright (C) 2014 Tarmo Alexander Sundström <ta@sundstrom.im>
+ * Copyright (C) 2016 Toni Lähdekorpi <toni@lygon.net>
  *
  * All Rights Reserved.
  *
@@ -29,43 +29,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-namespace Webvaloa\Helpers;
+namespace ValoaApplication\Plugins;
 
-class DateFormat
+use stdClass;
+use Webvaloa\Helpers\Navigation;
+
+/**
+ * Load global fields to view.
+ */
+class PluginNavigationViewPlugin extends \Webvaloa\Plugin
 {
-    public static function toMySQL($date = '')
+    public function onBeforeController()
     {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        if (empty($date)) {
-            $date = time();
-        }
-
-        return date('Y-m-d H:i:s', $date);
-    }
-
-    public static function format($date, $format)
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        return date($format, $date);
-    }
-
-    public static function localeFormat($date, $format)
-    {
-        if (!is_numeric($date)) {
-            $date = strtotime($date);
-        }
-
-        return strftime($format, $date);
-    }
-
-    public static function monthName($month)
-    {
-        return strftime('%B', mktime(null, null, null, (int) $month, 1));
+        $this->ui->addTemplate('navigation');
+        $navigation = new Navigation();
+        $this->view->_navigation = new stdClass();
+        $this->view->_navigation->basepath = $this->request->getBasePath();
+        $this->view->_navigation->navigation = $navigation->get();
     }
 }

@@ -95,7 +95,19 @@ class FrontController
                     // further parameters
                     self::defaults();
                 } else {
-                    $request->setController($request->getParam(0));
+                    if (self::controllerExists($request->getParam(0)) === true) {
+                        // Second parameter was a valid controller, so replace it in request
+                        $request->setController($request->getParam(0));
+                    } else {
+                        // Could not find valid controller, set controller as default
+                        if (isset($_SESSION['UserID']) && !empty($_SESSION['UserID'])) {
+                            $controller = $childController = self::$properties['defaultControllerAuthed'];
+                        } else {
+                            $controller = $childController = self::$properties['defaultController'];
+                        }
+
+                        $request->setController($controller);
+                    }
                 }
 
                 // Re-sort controller, method and parameters
@@ -103,7 +115,7 @@ class FrontController
             }
 
             // Check for url aliases
-            $alias = new Alias($request->getParam(0));
+            $alias = new Alias($request->getParams());
 
             if (isset($alias->controller->id)) {
                 // Set controlled and method
@@ -251,7 +263,7 @@ class FrontController
             $expectedParams = $reflection->getMethod($method)->getNumberOfParameters();
 
             if ($expectedParams > 0) {
-                for (; $expectedParams != 0; $expectedParams--) {
+                for (; $expectedParams != 0; --$expectedParams) {
                     // Params start from 0 in Controller_Request
                     $params[] = $request->getParam($expectedParams - 1);
                 }
@@ -312,12 +324,17 @@ class FrontController
      *
      * @return bool
      */
-    public static function controllerExists()
+    public static function controllerExists($controllerName = false)
     {
         $request = Request::getInstance();
 
-        $controller = $request->getMainController();
-        $childController = $request->getChildController();
+        if ($controllerName === false) {
+            $controller = $request->getMainController();
+            $childController = $request->getChildController();
+        } else {
+            $controller = self::getMainControllerName($controllerName);
+            $childController = self::getChildControllerName($controllerName);
+        }
 
         if (!$controller || empty($controller)) {
             $controller = $childController = self::$properties['defaultController'];
@@ -328,6 +345,34 @@ class FrontController
             .'\\'.$childController
             .'Controller';
 
-        return (class_exists($application));
+        $exists = (bool) class_exists($application);
+
+        return $exists;
+    }
+
+    public static function getControllerName($controller, $pos = 0)
+    {
+        $controller = strtolower($controller);
+
+        if (strpos($controller, '_') !== false) {
+            $parts = explode('_', $controller);
+            if (!empty($parts[$pos])) {
+                return ucfirst($parts[$pos]);
+            }
+
+            return '';
+        } else {
+            return ucfirst($controller);
+        }
+    }
+
+    public static function getMainControllerName($controller)
+    {
+        return self::getControllerName($controller, 0);
+    }
+
+    public static function getChildControllerName($controller)
+    {
+        return self::getControllerName($controller, 1);
     }
 }
